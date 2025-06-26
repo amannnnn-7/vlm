@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLM Image Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            max-width: 1200px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .counter {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .main-content {
+            display: flex;
+            min-height: 600px;
+        }
+
+        .image-section {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+
+        .image-container {
+            width: 100%;
+            max-width: 500px;
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .image-container:hover img {
+            transform: scale(1.02);
+        }
+
+        .filename {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .data-section {
+            flex: 1;
+            padding: 30px;
+            background: white;
+            border-left: 1px solid #eee;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .data-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .data-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .data-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+        }
+
+        .data-value {
+            color: #6c757d;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .navigation {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-btn:active {
+            transform: translateY(0);
+        }
+
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .nav-btn:hover::before {
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc3545;
+            font-size: 1.1rem;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .data-section {
+                border-left: none;
+                border-top: 1px solid #eee;
+                max-height: none;
+            }
+            
+            .counter {
+                position: static;
+                transform: none;
+                margin-top: 10px;
+                display: inline-block;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>VLM Image Viewer</h1>
+            <div class="counter" id="counter">Loading...</div>
+        </div>
+        
+        <div class="main-content">
+            <div class="image-section">
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    Loading images...
+                </div>
+                
+                <div id="content" style="display: none;">
+                    <div class="image-container">
+                        <img id="currentImage" src="" alt="Current image">
+                    </div>
+                    <div class="filename" id="filename"></div>
+                </div>
+                
+                <div id="error" class="error" style="display: none;">
+                    Failed to load image data. Please check that the data/image_data.json file exists and is properly formatted.
+                </div>
+            </div>
+            
+            <div class="data-section">
+                <h3>Image Information</h3>
+                <div id="imageData"></div>
+            </div>
+        </div>
+        
+        <div class="navigation">
+            <button class="nav-btn" id="prevBtn" onclick="previousImage()">← Previous</button>
+            <button class="nav-btn" id="nextBtn" onclick="nextImage()">Next →</button>
+        </div>
+    </div>
+
+    <script>
+        let imageData = [];
+        let currentIndex = 0;
+
+        // Load image data from JSON file
+        async function loadImageData() {
+            try {
+                const response = await fetch('data/image_data.json');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+                imageData = await response.json();
+                
+                if (imageData.length === 0) {
+                    throw new Error('No image data found');
+                }
+                
+                displayCurrentImage();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+            } catch (error) {
+                console.error('Error loading image data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function displayCurrentImage() {
+            if (imageData.length === 0) return;
+            
+            const current = imageData[currentIndex];
+            const img = document.getElementById('currentImage');
+            const filename = document.getElementById('filename');
+            const counter = document.getElementById('counter');
+            const dataContainer = document.getElementById('imageData');
+            
+            // Update image
+            img.src = `images/${current.filename}`;
+            img.alt = current.filename;
+            
+            // Update filename
+            filename.textContent = current.filename;
+            
+            // Update counter
+            counter.textContent = `${currentIndex + 1} of ${imageData.length}`;
+            
+            // Update data section
+            dataContainer.innerHTML = '';
+            Object.keys(current).forEach(key => {
+                if (key !== 'filename') {
+                    const dataItem = document.createElement('div');
+                    dataItem.className = 'data-item';
+                    dataItem.innerHTML = `
+                        <div class="data-label">${key.replace(/_/g, ' ')}</div>
+                        <div class="data-value">${current[key] || 'N/A'}</div>
+                    `;
+                    dataContainer.appendChild(dataItem);
+                }
+            });
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === imageData.length - 1;
+        }
+
+        function nextImage() {
+            if (currentIndex < imageData.length - 1) {
+                currentIndex++;
+                displayCurrentImage();
+            }
+        }
+
+        function previousImage() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayCurrentImage();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                previousImage();
+            } else if (e.key === 'ArrowRight') {
+                nextImage();
+            }
+        });
+
+        // Initialize the application
+        loadImageData();
+    </script>
+</body>
+</html>
