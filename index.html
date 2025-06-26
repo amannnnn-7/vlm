@@ -357,8 +357,11 @@
             
             // Update data section
             dataContainer.innerHTML = '';
+
+            const excludedFields = ['llm_output_llama_vision', 'llm_output_gemini2.5flash', 'llm_output_o4mini']; 
+            
             Object.keys(current).forEach(key => {
-                if (key !== 'filename') {
+                if (key !== 'filename' && !excludedFields.includes(key)) {
                     const dataItem = document.createElement('div');
                     dataItem.className = 'data-item';
                     dataItem.innerHTML = `
